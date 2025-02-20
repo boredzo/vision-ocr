@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		31C959522D66E351002FD015 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 31C959512D66E351002FD015 /* main.m */; };
+		31C9595A2D66E66B002FD015 /* PRHScannableFrame.m in Sources */ = {isa = PBXBuildFile; fileRef = 31C959592D66E66B002FD015 /* PRHScannableFrame.m */; };
+		31C9595D2D66F0A8002FD015 /* PRHImageScanner.m in Sources */ = {isa = PBXBuildFile; fileRef = 31C9595C2D66F0A8002FD015 /* PRHImageScanner.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,10 @@
 /* Begin PBXFileReference section */
 		31C9594E2D66E351002FD015 /* vision-ocr */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "vision-ocr"; sourceTree = BUILT_PRODUCTS_DIR; };
 		31C959512D66E351002FD015 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		31C959582D66E66B002FD015 /* PRHScannableFrame.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PRHScannableFrame.h; sourceTree = "<group>"; };
+		31C959592D66E66B002FD015 /* PRHScannableFrame.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PRHScannableFrame.m; sourceTree = "<group>"; };
+		31C9595B2D66F0A8002FD015 /* PRHImageScanner.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PRHImageScanner.h; sourceTree = "<group>"; };
+		31C9595C2D66F0A8002FD015 /* PRHImageScanner.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PRHImageScanner.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +64,10 @@
 			isa = PBXGroup;
 			children = (
 				31C959512D66E351002FD015 /* main.m */,
+				31C959582D66E66B002FD015 /* PRHScannableFrame.h */,
+				31C959592D66E66B002FD015 /* PRHScannableFrame.m */,
+				31C9595B2D66F0A8002FD015 /* PRHImageScanner.h */,
+				31C9595C2D66F0A8002FD015 /* PRHImageScanner.m */,
 			);
 			path = "vision-ocr";
 			sourceTree = "<group>";
@@ -119,6 +129,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31C9595D2D66F0A8002FD015 /* PRHImageScanner.m in Sources */,
+				31C9595A2D66E66B002FD015 /* PRHScannableFrame.m in Sources */,
 				31C959522D66E351002FD015 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
