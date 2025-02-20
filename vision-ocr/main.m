@@ -19,7 +19,10 @@ static int usage(FILE *_Nonnull const outFile) {
 	return outFile == stderr ? EX_USAGE : EXIT_SUCCESS;
 }
 
+bool transposeOutput = false;
 bool debugMode = false;
+
+static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value);
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
@@ -53,6 +56,12 @@ int main(int argc, const char * argv[]) {
 			if (optionsAllowed) {
 				if ([arg isEqualToString:@"--debug"]) {
 					debugMode = true;
+					optionParsed = true;
+				} else if ([arg isEqualToString:@"--transpose"]) {
+					transposeOutput = true;
+					optionParsed = true;
+				} else if ([arg isEqualToString:@"--no-transpose"]) {
+					transposeOutput = false;
 					optionParsed = true;
 				} else if ([arg isEqualToString:@"--help"]) {
 					return usage(stdout);
@@ -95,19 +104,39 @@ int main(int argc, const char * argv[]) {
 		CGImageRef _Nonnull const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
 		PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
 
-		if (anyFrameHasAName) {
-			printf("Name,Value\n");
-		}
-		[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
+		if (transposeOutput) {
 			if (anyFrameHasAName) {
-				printf("%s,%s\n", name.UTF8String ?: "", value ? value.UTF8String : "");
-			} else {
-				printf("%s\n", value ? value.UTF8String : "");
+				printf("Name,Value\n");
 			}
-		}];
+			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
+				if (anyFrameHasAName) {
+					printf("%s,%s\n", name.UTF8String ?: "", PRHEscapeForCSV(value).UTF8String);
+				} else {
+					printf("%s\n", PRHEscapeForCSV(value).UTF8String);
+				}
+			}];
+		} else {
+			NSMutableArray <NSString *> *_Nonnull const headerRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
+			[headerRow addObject:@"Image file"];
+			for (PRHScannableFrame *_Nonnull const frame in frames) {
+				[headerRow addObject:frame.name ?: @""];
+			}
+			NSMutableArray <NSString *> *_Nonnull const dataRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
+			[dataRow addObject:imagePath];
+			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
+				[dataRow addObject:PRHEscapeForCSV(value)];
+			}];
+
+			printf("%s\n", [headerRow componentsJoinedByString:@","].UTF8String);
+			printf("%s\n", [dataRow componentsJoinedByString:@","].UTF8String);
+		}
 
 		CFRelease(image);
 		CFRelease(src);
 	}
 	return EXIT_SUCCESS;
+}
+
+static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value) {
+	return [NSString stringWithFormat:@"\"%@\"", [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\"\""] ?: @""];
 }
