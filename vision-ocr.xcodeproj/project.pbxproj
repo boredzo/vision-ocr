@@ -31,6 +31,7 @@
 		31C959592D66E66B002FD015 /* PRHScannableFrame.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PRHScannableFrame.m; sourceTree = "<group>"; };
 		31C9595B2D66F0A8002FD015 /* PRHImageScanner.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PRHImageScanner.h; sourceTree = "<group>"; };
 		31C9595C2D66F0A8002FD015 /* PRHImageScanner.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PRHImageScanner.m; sourceTree = "<group>"; };
+		31C9595E2D672358002FD015 /* Prefix.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Prefix.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +69,7 @@
 				31C959592D66E66B002FD015 /* PRHScannableFrame.m */,
 				31C9595B2D66F0A8002FD015 /* PRHImageScanner.h */,
 				31C9595C2D66F0A8002FD015 /* PRHImageScanner.m */,
+				31C9595E2D672358002FD015 /* Prefix.h */,
 			);
 			path = "vision-ocr";
 			sourceTree = "<group>";
@@ -253,6 +255,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FX6BN52BK9;
 				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/vision-ocr/Prefix.h";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -263,6 +267,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = FX6BN52BK9;
 				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/vision-ocr/Prefix.h";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
