@@ -65,12 +65,9 @@ int main(int argc, const char * argv[]) {
 			if (! optionParsed) {
 				optionsAllowed = false;
 
-				if (imagePath == nil) {
-					imagePath = arg;
-				} else {
-					frameStrings = [argsEnum allObjects];
-					//Note: This exhausts argsEnum, which will end the loop
-				}
+				imagePath = arg;
+				frameStrings = [argsEnum allObjects];
+				//Note: This exhausts argsEnum, which will end the loop
 			}
 		}
 
