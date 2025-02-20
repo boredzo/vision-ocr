@@ -65,9 +65,9 @@ int main(int argc, const char * argv[]) {
 		}
 		[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
 			if (anyFrameHasAName) {
-				printf("%s,%s\n", name.UTF8String ?: "", value.UTF8String);
+				printf("%s,%s\n", name.UTF8String ?: "", value ? value.UTF8String : "");
 			} else {
-				printf("%s\n", value.UTF8String);
+				printf("%s\n", value ? value.UTF8String : "");
 			}
 		}];
 
