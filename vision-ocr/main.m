@@ -20,6 +20,7 @@ static int usage(FILE *_Nonnull const outFile) {
 }
 
 bool transposeOutput = false;
+bool includeHeaderRow = true;
 bool debugMode = false;
 
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value);
@@ -63,6 +64,12 @@ int main(int argc, const char * argv[]) {
 				} else if ([arg isEqualToString:@"--no-transpose"]) {
 					transposeOutput = false;
 					optionParsed = true;
+				} else if ([arg isEqualToString:@"--header"]) {
+					includeHeaderRow = true;
+					optionParsed = true;
+				} else if ([arg isEqualToString:@"--no-header"]) {
+					includeHeaderRow = false;
+					optionParsed = true;
 				} else if ([arg isEqualToString:@"--help"]) {
 					return usage(stdout);
 				} else if ([arg isEqualToString:@"--"]) {
@@ -105,7 +112,8 @@ int main(int argc, const char * argv[]) {
 		PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
 
 		if (transposeOutput) {
-			if (anyFrameHasAName) {
+			//Header row is always suppressed if all frames are unnamed. In that case, you get each value on one row.
+			if (includeHeaderRow || anyFrameHasAName) {
 				printf("Name,Value\n");
 			}
 			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
@@ -116,18 +124,22 @@ int main(int argc, const char * argv[]) {
 				}
 			}];
 		} else {
-			NSMutableArray <NSString *> *_Nonnull const headerRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
-			[headerRow addObject:@"Image file"];
-			for (PRHScannableFrame *_Nonnull const frame in frames) {
-				[headerRow addObject:frame.name ?: @""];
+			if (includeHeaderRow) {
+				NSMutableArray <NSString *> *_Nonnull const headerRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
+				[headerRow addObject:@"Image file"];
+				for (PRHScannableFrame *_Nonnull const frame in frames) {
+					[headerRow addObject:frame.name ?: @""];
+				}
+
+				printf("%s\n", [headerRow componentsJoinedByString:@","].UTF8String);
 			}
+
 			NSMutableArray <NSString *> *_Nonnull const dataRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
 			[dataRow addObject:imagePath];
 			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
 				[dataRow addObject:PRHEscapeForCSV(value)];
 			}];
 
-			printf("%s\n", [headerRow componentsJoinedByString:@","].UTF8String);
 			printf("%s\n", [dataRow componentsJoinedByString:@","].UTF8String);
 		}
 
