@@ -112,7 +112,7 @@ int main(int argc, const char * argv[]) {
 				if (anyFrameHasAName) {
 					printf("%s,%s\n", name.UTF8String ?: "", PRHEscapeForCSV(value).UTF8String);
 				} else {
-					printf("%s\n", PRHEscapeForCSV(value).UTF8String);
+					printf("%s\n", (value ?: @"").UTF8String);
 				}
 			}];
 		} else {
