@@ -43,17 +43,24 @@ int main(int argc, const char * argv[]) {
 		 */
 		//TODO: Implement CSV-compliant value escaping.
 
-		NSString *_Nullable firstArg = [argsEnum nextObject];
-		if ([firstArg isEqualToString:@"--debug"]) {
-			debugMode = true;
-			firstArg = [argsEnum nextObject];
+		NSString *_Nullable imagePath = nil;
+		NSArray <NSString *> *_Nullable frameStrings = nil;
+
+		for (NSString *_Nonnull const arg in argsEnum) {
+			if ([arg isEqualToString:@"--debug"]) {
+				debugMode = true;
+			} else if ([arg isEqualToString:@"--help"]) {
+				return usage(stdout);
+			} else if (imagePath == nil) {
+				imagePath = arg;
+			} else {
+				frameStrings = [argsEnum allObjects];
+				//Note: This exhausts argsEnum, which will end the loop
+			}
 		}
 
-		NSString *_Nullable const imagePath = firstArg;
 		if (imagePath == nil) {
 			return usage(stderr);
-		} else if ([imagePath isEqualToString:@"--help"]) {
-			return usage(stdout);
 		}
 		NSURL *_Nonnull const imageURL = [NSURL fileURLWithPath:imagePath isDirectory:false];
 
@@ -61,7 +68,6 @@ int main(int argc, const char * argv[]) {
 		NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
 
 		bool anyFrameHasAName = false;
-		NSArray <NSString *> *_Nonnull const frameStrings = [argsEnum allObjects];
 		NSMutableArray <PRHScannableFrame *> *_Nonnull const frames = [NSMutableArray arrayWithCapacity:frameStrings.count];
 		for (NSString *_Nonnull const str in frameStrings) {
 			PRHScannableFrame *_Nullable const frame = [PRHScannableFrame frameWithString:str imageProperties:imageProps];
