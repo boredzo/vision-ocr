@@ -26,6 +26,23 @@ int main(int argc, const char * argv[]) {
 		NSEnumerator <NSString *> *_Nonnull const argsEnum = [[NSProcessInfo processInfo].arguments objectEnumerator];
 		[argsEnum nextObject];
 
+		/*TODO: Options to add:
+		 * --output-format=csv/tsv/json/plist: Write output as comma-separated values, tab-separated values, or a JSON or property-list dictionary. Note that all dictionary values will be strings.
+		 * --transpose: Each row should be name,value
+		 * --no-transpose (should be new default): Each row should be filename,frame_value,frame_value,frame_value,…
+		 * --no-filename: Don't include filename in multi-column output
+		 * --no-header: Don't print the header row
+		 * --prefilters=red,green,blue,cyan,magenta,yellow,invert,levels(BP,G,WP),rotate(angle): Pre-filter the image before scanning.
+		 *	red: Take only the red channel and splat it across all channels.
+		 *	green, blue: Same thing from each of those channels.
+		 *	cyan, magenta, yellow: Take two channels, average them, and splat across all channels. E.g., cyan = (red + green) / 2.
+		 *	invert: Exactly what it sounds like. Likely works best on B&W images.
+		 *	levels: Levels filter. Set black point at BP (default=0%), white point at WP (100%), gamma at G (1.0).
+		 *	rotate: Rotate the image counter-clockwise around the center by some angle. angle should be a number followed by a degree sign (e.g., -0.1°).
+		 *	Prefilters can be specified in any order and multiple times.
+		 */
+		//TODO: Implement CSV-compliant value escaping.
+
 		NSString *_Nullable firstArg = [argsEnum nextObject];
 		if ([firstArg isEqualToString:@"--debug"]) {
 			debugMode = true;
