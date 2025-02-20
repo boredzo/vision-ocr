@@ -43,19 +43,31 @@ int main(int argc, const char * argv[]) {
 		 */
 		//TODO: Implement CSV-compliant value escaping.
 
+		bool optionsAllowed = true;
 		NSString *_Nullable imagePath = nil;
 		NSArray <NSString *> *_Nullable frameStrings = nil;
 
 		for (NSString *_Nonnull const arg in argsEnum) {
-			if ([arg isEqualToString:@"--debug"]) {
-				debugMode = true;
-			} else if ([arg isEqualToString:@"--help"]) {
-				return usage(stdout);
-			} else if (imagePath == nil) {
-				imagePath = arg;
-			} else {
-				frameStrings = [argsEnum allObjects];
-				//Note: This exhausts argsEnum, which will end the loop
+			bool optionParsed = false;
+
+			if (optionsAllowed) {
+				if ([arg isEqualToString:@"--debug"]) {
+					debugMode = true;
+					optionParsed = true;
+				} else if ([arg isEqualToString:@"--help"]) {
+					return usage(stdout);
+				}
+			}
+
+			if (! optionParsed) {
+				optionsAllowed = false;
+
+				if (imagePath == nil) {
+					imagePath = arg;
+				} else {
+					frameStrings = [argsEnum allObjects];
+					//Note: This exhausts argsEnum, which will end the loop
+				}
 			}
 		}
 
