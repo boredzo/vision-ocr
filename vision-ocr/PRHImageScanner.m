@@ -104,7 +104,7 @@ extern bool debugMode;
 		VNRecognizeTextRequest *_Nonnull const request = [[VNRecognizeTextRequest alloc] initWithCompletionHandler:completionHandler];
 
 		request.regionOfInterest = (struct CGRect){
-			{ frame.xCoordinate * imageWidth, 1.0 - frame.yCoordinate * imageHeight },
+			{ frame.xCoordinate / imageWidth, 1.0 - frame.yCoordinate / imageHeight },
 			{ frame.width / imageWidth, frame.height / -imageHeight}
 		};
 
