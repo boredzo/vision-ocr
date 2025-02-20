@@ -11,12 +11,14 @@
 
 extern bool debugMode;
 
-static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable const unit);
+enum PRHDimension {
+	PRHDimensionX,
+	PRHDimensionY,
+};
+
+static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable const unit, NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps, enum PRHDimension const dim);
 
 @implementation PRHScannableFrame
-{
-	NSUInteger dpiX, dpiY;
-}
 
 + (instancetype _Nullable) frameWithString:(NSString *_Nonnull const)str imageProperties:(NSDictionary <NSString *, NSNumber *> *_Nullable const)imageProps {
 	return [[self alloc] initWithString:str imageProperties:imageProps];
@@ -37,45 +39,90 @@ static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable 
 - (instancetype _Nullable) initWithString:(NSString *_Nonnull const)str imageProperties:(NSDictionary <NSString *, NSNumber *> *_Nullable const)imageProps {
 	NSScanner *_Nonnull const scanner = [NSScanner scannerWithString:str];
 
-	dpiX = imageProps[(__bridge NSString *)kCGImagePropertyDPIWidth].integerValue;
-	dpiY = imageProps[(__bridge NSString *)kCGImagePropertyDPIHeight].integerValue;
+	CGFloat const imageWidth = (imageProps[(__bridge NSString *)kCGImagePropertyPixelWidth] ?: imageProps[(__bridge NSString *)kCGImagePropertyWidth]).doubleValue;
+	CGFloat const imageHeight = (imageProps[(__bridge NSString *)kCGImagePropertyPixelHeight] ?: imageProps[(__bridge NSString *)kCGImagePropertyHeight]).doubleValue;
 
 	NSString *_Nullable name = nil;
 	[scanner scanUpToString:@"=" intoString:&name];
 	if (name != nil && name.length == 0) {
 		name = nil;
 	}
+	[scanner scanString:@"=" intoString:NULL];
 
 	CGFloat xCoord = 0, yCoord = 0;
 	NSString *_Nullable xUnit = nil;
 	NSString *_Nullable yUnit = nil;
 	CGFloat width = 0, height = 0;
 	NSString *_Nullable widthUnit = nil;
-	NSString *_Nullable HeightUnit = nil;
+	NSString *_Nullable heightUnit = nil;
+
+	NSArray <NSString *> *_Nonnull const unitNames = @[
+		@"%",
+		@"cm", @"mm",
+		//Note that order matters when some units are potential prefixes of others. We need to try the longest string first.
+		@"inches", @"inch", @"in",
+	];
 
 	[scanner scanDouble:&xCoord];
-	[scanner scanUpToString:@"," intoString:&xUnit];
+	for (NSString *_Nonnull const unitCandidate in unitNames) {
+		if ([scanner scanString:unitCandidate intoString:&xUnit]) {
+			break;
+		}
+	}
 	[scanner scanString:@"," intoString:NULL];
 	[scanner scanDouble:&yCoord];
-	[scanner scanUpToString:@"," intoString:&yUnit];
+	for (NSString *_Nonnull const unitCandidate in unitNames) {
+		if ([scanner scanString:unitCandidate intoString:&yUnit]) {
+			break;
+		}
+	}
 	[scanner scanString:@"," intoString:NULL];
 
 	[scanner scanDouble:&width];
-	[scanner scanString:@"cm" intoString:&xUnit];
-	[scanner scanString:@"mm" intoString:&xUnit];
-	[scanner scanString:@"in" intoString:&xUnit];
+	for (NSString *_Nonnull const unitCandidate in unitNames) {
+		if ([scanner scanString:unitCandidate intoString:&widthUnit]) {
+			break;
+		}
+	}
 	[scanner scanString:@"," intoString:NULL];
 	[scanner scanString:@"x" intoString:NULL];
 	[scanner scanDouble:&height];
-	[scanner scanString:@"cm" intoString:&yUnit];
-	[scanner scanString:@"mm" intoString:&yUnit];
-	[scanner scanString:@"in" intoString:&yUnit];
+	for (NSString *_Nonnull const unitCandidate in unitNames) {
+		if ([scanner scanString:unitCandidate intoString:&heightUnit]) {
+			break;
+		}
+	}
+
+	CGFloat xAbsPixels = signbit(xCoord)
+		? imageWidth + convertFromUnitToPixels(xCoord, xUnit, imageProps, PRHDimensionX)
+		: convertFromUnitToPixels(xCoord, xUnit, imageProps, PRHDimensionX);
+	CGFloat yAbsPixels = signbit(yCoord)
+		? imageHeight + convertFromUnitToPixels(yCoord, yUnit, imageProps, PRHDimensionY)
+		: convertFromUnitToPixels(yCoord, yUnit, imageProps, PRHDimensionY);
+	if (debugMode) {
+		NSLog(@"Input origin: %.1f, %.1f", xCoord, yCoord);
+		NSLog(@"Image WAH: %.1f, %.1f", imageWidth, imageHeight);
+		NSLog(@"Converted origin: %.1f, %.1f", xAbsPixels, yAbsPixels);
+	}
+	CGFloat widthPixels = convertFromUnitToPixels(width, widthUnit, imageProps, PRHDimensionX);
+	if (signbit(widthPixels)) {
+		widthPixels = -widthPixels;
+		xAbsPixels -= widthPixels;
+	}
+	CGFloat heightPixels = convertFromUnitToPixels(height, heightUnit, imageProps, PRHDimensionY);
+	if (signbit(heightPixels)) {
+		heightPixels = -heightPixels;
+		yAbsPixels -= heightPixels;
+	}
+	if (debugMode) {
+		NSLog(@"Final origin: %.1f, %.1f", xAbsPixels, yAbsPixels);
+	}
 
 	self = [self initWithName:name
-		x:convertFromUnitToPixels(xCoord, xUnit)
-		y:convertFromUnitToPixels(yCoord, yUnit)
-		width:convertFromUnitToPixels(width, widthUnit)
-		height:convertFromUnitToPixels(height, HeightUnit)];
+		x:xAbsPixels
+		y:yAbsPixels
+		width:widthPixels
+		height:heightPixels];
 
 	if (debugMode) {
 		NSLog(@"%@ → %@=%f,%f,%fx%f", str, self.name ?: @"''", self.xCoordinate, self.yCoordinate, self.width, self.height);
@@ -102,7 +149,34 @@ static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable 
 
 @end
 
-static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable const unit) {
-#warning TODO: Implement in, cm, mm units
+static CGFloat convertFromUnitToPixels(CGFloat const value, NSString *_Nullable const unit, NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps, enum PRHDimension const dim) {
+
+	CGFloat const dpiX = imageProps[(__bridge NSString *)kCGImagePropertyDPIWidth].doubleValue;
+	CGFloat const dpiY = imageProps[(__bridge NSString *)kCGImagePropertyDPIHeight].doubleValue;
+
+	CGFloat const imageWidth = (imageProps[(__bridge NSString *)kCGImagePropertyPixelWidth] ?: imageProps[(__bridge NSString *)kCGImagePropertyWidth]).doubleValue;
+	CGFloat const imageHeight = (imageProps[(__bridge NSString *)kCGImagePropertyPixelHeight] ?: imageProps[(__bridge NSString *)kCGImagePropertyHeight]).doubleValue;
+
+	if ([unit isEqualToString:@"%"]) {
+		CGFloat const fraction = value / 100.0;
+		return fraction * ((dim == PRHDimensionX)
+			? imageWidth
+			: imageHeight);
+	} else if ([unit hasPrefix:@"in"]) {
+		CGFloat const inches = value;
+		CGFloat const pixels = inches * (dim == PRHDimensionX ? dpiX : dpiY);
+		return pixels;
+	} else if ([unit hasPrefix:@"mm"]) {
+		CGFloat const millimeters = value;
+		CGFloat const inches = millimeters / 25.4;
+		CGFloat const pixels = inches * (dim == PRHDimensionX ? dpiX : dpiY);
+		return pixels;
+	} else if ([unit hasPrefix:@"cm"]) {
+		CGFloat const centimeters = value;
+		CGFloat const inches = centimeters / 2.54;
+		CGFloat const pixels = inches * (dim == PRHDimensionX ? dpiX : dpiY);
+		return pixels;
+	}
+
 	return value;
 }
