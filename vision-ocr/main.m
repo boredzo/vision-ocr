@@ -56,6 +56,9 @@ int main(int argc, const char * argv[]) {
 					optionParsed = true;
 				} else if ([arg isEqualToString:@"--help"]) {
 					return usage(stdout);
+				} else if ([arg isEqualToString:@"--"]) {
+					optionsAllowed = false;
+					optionParsed = true;
 				}
 			}
 
