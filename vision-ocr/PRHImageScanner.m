@@ -63,6 +63,10 @@ extern bool debugMode;
 		{ frame.width / imageWidth, frame.height / imageHeight}
 	};
 
+	if (self.languageCodes) {
+		request.recognitionLanguages = self.languageCodes;
+	}
+
 	VNImageRequestHandler *_Nonnull const handler = [[VNImageRequestHandler alloc] initWithCGImage:_image options:@{ VNImageOptionProperties: _imageProps }];
 
 	NSError *_Nullable error = nil;
@@ -107,6 +111,10 @@ extern bool debugMode;
 			{ frame.xCoordinate / imageWidth, 1.0 - frame.yCoordinate / imageHeight },
 			{ frame.width / imageWidth, frame.height / -imageHeight}
 		};
+
+		if (self.languageCodes) {
+			request.recognitionLanguages = self.languageCodes;
+		}
 
 		requestToFrameMap[request.description] = frame;
 		[requests addObject:request];

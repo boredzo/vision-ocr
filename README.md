@@ -15,6 +15,7 @@ You give it an image and one or more named frames. A frame specifies a rectangul
 > Options:
 > --transpose: Default is to emit one row per image. With --transpose, output will be one row per frame: name,value.
 > --header: Default is to emit a header row before any data rows. With --no-header, header row will be omitted (this enables concatenating output from multiple runs).
+> --languages=LANGS: LANGS is a comma-separated of ISO language codes to direct the recognizer to favor.
 
 ## Specifying rectangles
 

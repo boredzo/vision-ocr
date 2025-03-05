@@ -20,6 +20,7 @@ static int usage(FILE *_Nonnull const outFile) {
 	fprintf(outFile, "Options:\n");
 	fprintf(outFile, "--transpose: Default is to emit one row per image. With --transpose, output will be one row per frame: name,value.\n");
 	fprintf(outFile, "--header: Default is to emit a header row before any data rows. With --no-header, header row will be omitted (this enables concatenating output from multiple runs).\n");
+	fprintf(outFile, "--languages=LANGS: LANGS is a comma-separated of ISO language codes to direct the recognizer to favor.\n");
 	return outFile == stderr ? EX_USAGE : EXIT_SUCCESS;
 }
 
@@ -55,12 +56,20 @@ int main(int argc, const char * argv[]) {
 		//TODO: Implement CSV-compliant value escaping.
 
 		bool optionsAllowed = true;
+		bool expectLanguages = false;
+		NSArray <NSString *> *_Nullable languageCodes = nil;
 		NSMutableArray <NSString *> *_Nonnull const imagePaths = [NSMutableArray arrayWithCapacity:args.count];
 		NSArray <NSString *> *_Nullable frameStrings = nil;
 		NSFileManager *_Nonnull const mgr = [NSFileManager defaultManager];
 
 		for (NSString *_Nonnull const arg in argsEnum) {
 			bool optionParsed = false;
+
+			if (expectLanguages) {
+				languageCodes = [arg componentsSeparatedByString:@","];
+				expectLanguages = false;
+				continue;
+			}
 
 			if (optionsAllowed) {
 				if ([arg isEqualToString:@"--debug"]) {
@@ -77,6 +86,13 @@ int main(int argc, const char * argv[]) {
 					optionParsed = true;
 				} else if ([arg isEqualToString:@"--no-header"]) {
 					includeHeaderRow = false;
+					optionParsed = true;
+				} else if ([arg isEqualToString:@"--languages"]) {
+					expectLanguages = true;
+					optionParsed = true;
+				} else if ([arg hasPrefix:@"--languages="]) {
+					NSString *_Nonnull const payload = [arg substringFromIndex:@"--languages=".length];
+					languageCodes = [payload componentsSeparatedByString:@","];
 					optionParsed = true;
 				} else if ([arg isEqualToString:@"--help"]) {
 					return usage(stdout);
@@ -171,6 +187,7 @@ int main(int argc, const char * argv[]) {
 			}
 
 			PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
+			imageScanner.languageCodes = languageCodes;
 
 			if (transposeOutput) {
 				[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
