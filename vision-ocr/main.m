@@ -30,6 +30,8 @@ bool debugMode = false;
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value);
 
 int main(int argc, const char * argv[]) {
+	int status = EXIT_SUCCESS;
+
 	@autoreleasepool {
 		NSArray <NSString *> *_Nonnull const args = [NSProcessInfo processInfo].arguments;
 		NSEnumerator <NSString *> *_Nonnull const argsEnum = [args objectEnumerator];
@@ -93,6 +95,10 @@ int main(int argc, const char * argv[]) {
 					[imagePaths addObject:arg];
 				} else if ([mgr fileExistsAtPath:arg]) {
 					[imagePaths addObject:arg];
+				} else if (! [arg containsString:@","]) {
+					//Doesn't look like a frame rectangle, but it doesn't exist.
+					fprintf(stderr, "error: Not an extant file or frame rectangle: %s\n", arg.UTF8String);
+					return EX_NOINPUT;
 				} else {
 					//Not an extant file. Assume this is a frame.
 					frameStrings = [@[ arg ] arrayByAddingObjectsFromArray:[argsEnum allObjects]];
@@ -137,7 +143,20 @@ int main(int argc, const char * argv[]) {
 			NSURL *_Nonnull const imageURL = [NSURL fileURLWithPath:imagePath isDirectory:false];
 
 			CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)imageURL, /*options*/ NULL);
+			if (src == NULL) {
+				NSString *_Nonnull const errorString = [NSString stringWithUTF8String:strerror(errno)];
+				fprintf(stderr, "error: Could not read file %s: %s\n", imagePath.UTF8String, errorString.UTF8String ?: "(unknown error)");
+				status = EX_NOINPUT;
+			}
 			NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+
+			CGImageRef _Nullable const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+			if (image == NULL) {
+				fprintf(stderr, "error: Could not decode image from %s\n", imagePath.UTF8String);
+				status = EX_DATAERR;
+				CFRelease(src);
+				continue;
+			}
 
 			NSMutableArray <PRHScannableFrame *> *_Nonnull const frames = [NSMutableArray arrayWithCapacity:frameStrings.count];
 			for (NSString *_Nonnull const str in frameStrings) {
@@ -151,7 +170,6 @@ int main(int argc, const char * argv[]) {
 				[frames addObject:[PRHScannableFrame frameWithExtentFromImageProperties:imageProps]];
 			}
 
-			CGImageRef _Nonnull const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
 			PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
 
 			if (transposeOutput) {
@@ -176,7 +194,7 @@ int main(int argc, const char * argv[]) {
 			CFRelease(src);
 		}
 	}
-	return EXIT_SUCCESS;
+	return status;
 }
 
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value) {
