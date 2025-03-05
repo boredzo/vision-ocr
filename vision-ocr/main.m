@@ -13,8 +13,8 @@
 #import "PRHImageScanner.h"
 
 static int usage(FILE *_Nonnull const outFile) {
-	fprintf(outFile, "Usage: vision-ocr [options] input-file [frames]\n");
-	fprintf(outFile, "input-file can be any image file in a common image format like PNG or JPEG.\n");
+	fprintf(outFile, "Usage: vision-ocr [options] input-files [frames]\n");
+	fprintf(outFile, "input-files is one or more paths to image files in common image formats such as PNG or JPEG.\n");
 	fprintf(outFile, "frames are zero or more rectangles in the form “[name=]X,Y,WxH”. Units are in pixels unless specified (e.g., 2cm). Origin is upper-left for positive coordinates, lower-right for negative. If no frames specified, scan the entire image. If frames are named (e.g., pageNumber=-2cm,-2cm,2cmx2cm), output will be CSV.\n");
 	fprintf(outFile, "\n");
 	fprintf(outFile, "Options:\n");
@@ -31,7 +31,8 @@ static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value)
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		NSEnumerator <NSString *> *_Nonnull const argsEnum = [[NSProcessInfo processInfo].arguments objectEnumerator];
+		NSArray <NSString *> *_Nonnull const args = [NSProcessInfo processInfo].arguments;
+		NSEnumerator <NSString *> *_Nonnull const argsEnum = [args objectEnumerator];
 		[argsEnum nextObject];
 
 		/*TODO: Options to add:
@@ -52,8 +53,9 @@ int main(int argc, const char * argv[]) {
 		//TODO: Implement CSV-compliant value escaping.
 
 		bool optionsAllowed = true;
-		NSString *_Nullable imagePath = nil;
+		NSMutableArray <NSString *> *_Nonnull const imagePaths = [NSMutableArray arrayWithCapacity:args.count];
 		NSArray <NSString *> *_Nullable frameStrings = nil;
+		NSFileManager *_Nonnull const mgr = [NSFileManager defaultManager];
 
 		for (NSString *_Nonnull const arg in argsEnum) {
 			bool optionParsed = false;
@@ -87,70 +89,92 @@ int main(int argc, const char * argv[]) {
 			}
 
 			if (! optionsAllowed) {
-				imagePath = arg;
-				frameStrings = [argsEnum allObjects];
-				//Note: This exhausts argsEnum, which will end the loop
+				if ([arg containsString:@"/"]) {
+					[imagePaths addObject:arg];
+				} else if ([mgr fileExistsAtPath:arg]) {
+					[imagePaths addObject:arg];
+				} else {
+					//Not an extant file. Assume this is a frame.
+					frameStrings = [@[ arg ] arrayByAddingObjectsFromArray:[argsEnum allObjects]];
+					//Note: This exhausts argsEnum, which will end the loop
+				}
 			}
 		}
 
-		if (imagePath == nil) {
+		if (imagePaths.count == 0) {
 			return usage(stderr);
 		}
-		NSURL *_Nonnull const imageURL = [NSURL fileURLWithPath:imagePath isDirectory:false];
-
-		CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)imageURL, /*options*/ NULL);
-		NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
 
 		bool anyFrameHasAName = false;
-		NSMutableArray <PRHScannableFrame *> *_Nonnull const frames = [NSMutableArray arrayWithCapacity:frameStrings.count];
+		//We can't parse the real frames once for all images because their interpretation may differ by image (e.g., one being 300 DPI and another being 600 DPI, real-world units will equate to different numbers of pixels). So we parse them here without DPI info just to get the names, and then again for each image.
+		NSMutableArray <PRHScannableFrame *> *_Nonnull const dimensionlessFrames = [NSMutableArray arrayWithCapacity:frameStrings.count];
 		for (NSString *_Nonnull const str in frameStrings) {
-			PRHScannableFrame *_Nullable const frame = [PRHScannableFrame frameWithString:str imageProperties:imageProps];
+			PRHScannableFrame *_Nullable const frame = [PRHScannableFrame frameWithString:str imageProperties:nil];
 			if (frame.name != nil && frame.name.length > 0) {
 				anyFrameHasAName = true;
 			}
-			[frames addObject:frame];
+			[dimensionlessFrames addObject:frame];
 		}
-		if (frames.count == 0) {
-			[frames addObject:[PRHScannableFrame frameWithExtentFromImageProperties:imageProps]];
-		}
-
-		CGImageRef _Nonnull const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
-		PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
 
 		if (transposeOutput) {
 			//Header row is always suppressed if all frames are unnamed. In that case, you get each value on one row.
 			if (includeHeaderRow || anyFrameHasAName) {
 				printf("Name,Value\n");
 			}
-			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
-				if (anyFrameHasAName) {
-					printf("%s,%s\n", name.UTF8String ?: "", PRHEscapeForCSV(value).UTF8String);
-				} else {
-					printf("%s\n", (value ?: @"").UTF8String);
-				}
-			}];
 		} else {
 			if (includeHeaderRow) {
-				NSMutableArray <NSString *> *_Nonnull const headerRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
+				NSMutableArray <NSString *> *_Nonnull const headerRow = [NSMutableArray arrayWithCapacity:1 + dimensionlessFrames.count];
 				[headerRow addObject:@"Image file"];
-				for (PRHScannableFrame *_Nonnull const frame in frames) {
+				for (PRHScannableFrame *_Nonnull const frame in dimensionlessFrames) {
 					[headerRow addObject:frame.name ?: @""];
 				}
 
 				printf("%s\n", [headerRow componentsJoinedByString:@","].UTF8String);
 			}
-
-			NSMutableArray <NSString *> *_Nonnull const dataRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
-			[dataRow addObject:imagePath];
-			[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
-				[dataRow addObject:PRHEscapeForCSV(value)];
-			}];
-
-			printf("%s\n", [dataRow componentsJoinedByString:@","].UTF8String);
 		}
 
-		CFRelease(image);
-		CFRelease(src);
+		for (NSString *_Nonnull const imagePath in imagePaths) {
+			NSURL *_Nonnull const imageURL = [NSURL fileURLWithPath:imagePath isDirectory:false];
+
+			CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)imageURL, /*options*/ NULL);
+			NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+
+			NSMutableArray <PRHScannableFrame *> *_Nonnull const frames = [NSMutableArray arrayWithCapacity:frameStrings.count];
+			for (NSString *_Nonnull const str in frameStrings) {
+				PRHScannableFrame *_Nullable const frame = [PRHScannableFrame frameWithString:str imageProperties:imageProps];
+				if (frame.name != nil && frame.name.length > 0) {
+					anyFrameHasAName = true;
+				}
+				[frames addObject:frame];
+			}
+			if (frames.count == 0) {
+				[frames addObject:[PRHScannableFrame frameWithExtentFromImageProperties:imageProps]];
+			}
+
+			CGImageRef _Nonnull const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+			PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
+
+			if (transposeOutput) {
+				[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
+					if (anyFrameHasAName) {
+						printf("%s,%s\n", name.UTF8String ?: "", PRHEscapeForCSV(value).UTF8String);
+					} else {
+						printf("%s\n", (value ?: @"").UTF8String);
+					}
+				}];
+			} else {
+				NSMutableArray <NSString *> *_Nonnull const dataRow = [NSMutableArray arrayWithCapacity:1 + frames.count];
+				[dataRow addObject:imagePath];
+				[imageScanner scanFrames:frames resultHandler:^(NSString *_Nullable name, NSString *_Nullable value) {
+					[dataRow addObject:PRHEscapeForCSV(value)];
+				}];
+
+				printf("%s\n", [dataRow componentsJoinedByString:@","].UTF8String);
+			}
+
+			CFRelease(image);
+			CFRelease(src);
+		}
 	}
 	return EXIT_SUCCESS;
 }

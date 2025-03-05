@@ -6,9 +6,9 @@ You give it an image and one or more named frames. A frame specifies a rectangul
 
 ## Usage
 
-> Usage: vision-ocr input-file [frames]
+> Usage: vision-ocr input-files [frames]
 > 
-> input-file can be any image file in a common image format like PNG or JPEG.
+> input-files is one or more paths to image files in common image formats such as PNG or JPEG.
 > 
 > frames are zero or more rectangles in the form “[name=]X,Y,WxH”. Units are in pixels unless specified (e.g., 2cm). Origin is upper-left for positive coordinates, lower-right for negative. If no frames specified, scan the entire image. If frames are named (e.g., pageNumber=-2cm,-2cm,2cmx2cm), output will be CSV.
 > 
