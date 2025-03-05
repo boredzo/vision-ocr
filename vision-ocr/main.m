@@ -80,11 +80,13 @@ int main(int argc, const char * argv[]) {
 					optionsAllowed = false;
 					optionParsed = true;
 				}
+
+				if (! optionParsed) {
+					optionsAllowed = false;
+				}
 			}
 
-			if (! optionParsed) {
-				optionsAllowed = false;
-
+			if (! optionsAllowed) {
 				imagePath = arg;
 				frameStrings = [argsEnum allObjects];
 				//Note: This exhausts argsEnum, which will end the loop
