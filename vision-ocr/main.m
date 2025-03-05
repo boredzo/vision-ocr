@@ -13,9 +13,13 @@
 #import "PRHImageScanner.h"
 
 static int usage(FILE *_Nonnull const outFile) {
-	fprintf(outFile, "Usage: vision-ocr input-file [frames]\n");
+	fprintf(outFile, "Usage: vision-ocr [options] input-file [frames]\n");
 	fprintf(outFile, "input-file can be any image file in a common image format like PNG or JPEG.\n");
-	fprintf(outFile, "frames are zero or more rectangles in the form “[name=]X,Y,WxH”. Units are in pixels unless specified (e.g., 2cm). Origin is upper-left for positive coordinates, lower-right for negative. If no frames specified, scan the entire image. If frames are named (e.g., pageNumber=-2cm,-2cm,2cmx2cm), output will be CSV of name,value.\n");
+	fprintf(outFile, "frames are zero or more rectangles in the form “[name=]X,Y,WxH”. Units are in pixels unless specified (e.g., 2cm). Origin is upper-left for positive coordinates, lower-right for negative. If no frames specified, scan the entire image. If frames are named (e.g., pageNumber=-2cm,-2cm,2cmx2cm), output will be CSV.\n");
+	fprintf(outFile, "\n");
+	fprintf(outFile, "Options:\n");
+	fprintf(outFile, "--transpose: Default is to emit one row per image. With --transpose, output will be one row per frame: name,value.\n");
+	fprintf(outFile, "--header: Default is to emit a header row before any data rows. With --no-header, header row will be omitted (this enables concatenating output from multiple runs).\n");
 	return outFile == stderr ? EX_USAGE : EXIT_SUCCESS;
 }
 
