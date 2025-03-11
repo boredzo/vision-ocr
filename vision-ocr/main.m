@@ -30,6 +30,8 @@ bool debugMode = false;
 
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value);
 
+static CGImageRef _Nullable const PRHLoadImageFromFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps);
+
 int main(int argc, const char * argv[]) {
 	int status = EXIT_SUCCESS;
 
@@ -158,19 +160,12 @@ int main(int argc, const char * argv[]) {
 		for (NSString *_Nonnull const imagePath in imagePaths) {
 			NSURL *_Nonnull const imageURL = [NSURL fileURLWithPath:imagePath isDirectory:false];
 
-			CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)imageURL, /*options*/ NULL);
-			if (src == NULL) {
-				NSString *_Nonnull const errorString = [NSString stringWithUTF8String:strerror(errno)];
-				fprintf(stderr, "error: Could not read file %s: %s\n", imagePath.UTF8String, errorString.UTF8String ?: "(unknown error)");
-				status = EX_NOINPUT;
-			}
-			NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+			NSDictionary <NSString *, NSNumber *> *_Nullable imageProps = nil;
+			CGImageRef _Nullable const image = PRHLoadImageFromFile(imageURL, &imageProps);
 
-			CGImageRef _Nullable const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
 			if (image == NULL) {
 				fprintf(stderr, "error: Could not decode image from %s\n", imagePath.UTF8String);
 				status = EX_DATAERR;
-				CFRelease(src);
 				continue;
 			}
 
@@ -208,7 +203,6 @@ int main(int argc, const char * argv[]) {
 			}
 
 			CFRelease(image);
-			CFRelease(src);
 		}
 	}
 	return status;
@@ -216,4 +210,23 @@ int main(int argc, const char * argv[]) {
 
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value) {
 	return [NSString stringWithFormat:@"\"%@\"", [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\"\""] ?: @""];
+}
+
+static CGImageRef _Nullable const PRHLoadImageFromFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps) {
+	CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)fileURL, /*options*/ NULL);
+	if (src == NULL) {
+		NSString *_Nonnull const errorString = [NSString stringWithUTF8String:strerror(errno)];
+		fprintf(stderr, "error: Could not read file %s: %s\n", fileURL.path.UTF8String, errorString.UTF8String ?: "(unknown error)");
+
+		return NULL;
+	} else {
+		NSDictionary <NSString *, NSNumber *> *_Nullable const imageProps = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+
+		CGImageRef _Nullable const image = CGImageSourceCreateImageAtIndex(src, /*idx*/ 0, /*options*/ NULL);
+		if (outProps != NULL) *outProps = imageProps;
+
+		CFRelease(src);
+
+		return image;
+	}
 }
