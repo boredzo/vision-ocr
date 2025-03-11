@@ -12,9 +12,9 @@ You give it an image and one or more named frames. A frame specifies a rectangul
 > 
 > frames are zero or more rectangles in the form “[name=]X,Y,WxH”. Units are in pixels unless specified (e.g., 2cm). Origin is upper-left for positive coordinates, lower-right for negative. If no frames specified, scan the entire image. If frames are named (e.g., pageNumber=-2cm,-2cm,2cmx2cm), output will be CSV.
 > 
-> Options:
-> --transpose: Default is to emit one row per image. With --transpose, output will be one row per frame: name,value.
-> --header: Default is to emit a header row before any data rows. With --no-header, header row will be omitted (this enables concatenating output from multiple runs).
+> Options:  
+> --transpose: Default is to emit one row per image. With --transpose, output will be one row per frame: name,value.  
+> --header: Default is to emit a header row before any data rows. With --no-header, header row will be omitted (this enables concatenating output from multiple runs).  
 > --languages=LANGS: LANGS is a comma-separated of ISO language codes to direct the recognizer to favor.
 
 ## Specifying rectangles
