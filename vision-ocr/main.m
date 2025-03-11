@@ -8,6 +8,7 @@
 #import <sysexits.h>
 #import <Foundation/Foundation.h>
 #import <ImageIO/ImageIO.h>
+#import <PDFKit/PDFKit.h>
 
 #import "PRHScannableFrame.h"
 #import "PRHImageScanner.h"
@@ -240,5 +241,35 @@ static CGImageRef _Nullable const PRHLoadImageFromRasterFile(NSURL *_Nonnull con
 	}
 }
 static CGImageRef _Nullable const PRHLoadImageFromPDFFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps) {
-	return NULL;
+	CGImageRef _Nullable image = NULL;
+	NSDictionary <NSString *, NSNumber *> *_Nullable imageProps = nil;
+
+	PDFDocument *_Nullable const pdfDoc = [[PDFDocument alloc] initWithURL:fileURL];
+	if (pdfDoc != nil) {
+		PDFPage *_Nonnull const page = [pdfDoc pageAtIndex:0];
+		NSRect const mediaBox = [page boundsForBox:kPDFDisplayBoxMediaBox];
+		NSRect mediaBoxPlusMargins = { NSZeroPoint, mediaBox.size };
+		mediaBoxPlusMargins.size.width += mediaBox.origin.x * 2.0;
+		mediaBoxPlusMargins.size.height += mediaBox.origin.y * 2.0;
+
+		NSImage *_Nonnull const imageNS = [NSImage imageWithSize:mediaBox.size flipped:false drawingHandler:^BOOL(NSRect dstRect) {
+			[page drawWithBox:kPDFDisplayBoxMediaBox toContext:[NSGraphicsContext currentContext].CGContext];
+			return true;
+		}];
+		image = [imageNS CGImageForProposedRect:&mediaBoxPlusMargins context:nil hints:nil];
+
+		imageProps = @{
+			(__bridge NSString *)kCGImagePropertyDPIWidth: @144,
+			(__bridge NSString *)kCGImagePropertyDPIHeight: @144,
+			(__bridge NSString *)kCGImagePropertyWidth: @(mediaBoxPlusMargins.size.width),
+			(__bridge NSString *)kCGImagePropertyHeight: @(mediaBoxPlusMargins.size.height),
+			(__bridge NSString *)kCGImagePropertyPixelWidth: @(mediaBoxPlusMargins.size.width * 2.0),
+			(__bridge NSString *)kCGImagePropertyPixelHeight: @(mediaBoxPlusMargins.size.height * 2.0),
+		};
+		if (outProps != NULL) {
+			*outProps = imageProps;
+		}
+	}
+
+	return image;
 }
