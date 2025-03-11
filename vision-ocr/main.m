@@ -31,6 +31,8 @@ bool debugMode = false;
 static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value);
 
 static CGImageRef _Nullable const PRHLoadImageFromFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps);
+static CGImageRef _Nullable const PRHLoadImageFromRasterFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps);
+static CGImageRef _Nullable const PRHLoadImageFromPDFFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps);
 
 int main(int argc, const char * argv[]) {
 	int status = EXIT_SUCCESS;
@@ -213,6 +215,13 @@ static NSString *_Nonnull const PRHEscapeForCSV(NSString *_Nullable const value)
 }
 
 static CGImageRef _Nullable const PRHLoadImageFromFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps) {
+	if ([fileURL.pathExtension.lowercaseString isEqualToString:@"pdf"]) {
+		return PRHLoadImageFromPDFFile(fileURL, outProps);
+	} else {
+		return PRHLoadImageFromRasterFile(fileURL, outProps);
+	}
+}
+static CGImageRef _Nullable const PRHLoadImageFromRasterFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps) {
 	CGImageSourceRef _Nonnull const src = CGImageSourceCreateWithURL((__bridge CFURLRef)fileURL, /*options*/ NULL);
 	if (src == NULL) {
 		NSString *_Nonnull const errorString = [NSString stringWithUTF8String:strerror(errno)];
@@ -229,4 +238,7 @@ static CGImageRef _Nullable const PRHLoadImageFromFile(NSURL *_Nonnull const fil
 
 		return image;
 	}
+}
+static CGImageRef _Nullable const PRHLoadImageFromPDFFile(NSURL *_Nonnull const fileURL, NSDictionary <NSString *, NSNumber *> *_Nullable *_Nullable const outProps) {
+	return NULL;
 }
