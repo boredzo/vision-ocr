@@ -113,6 +113,9 @@ extern bool debugMode;
 			{ frame.xCoordinate / imageWidth, 1.0 - frame.yCoordinate / imageHeight },
 			{ frame.width / imageWidth, frame.height / -imageHeight}
 		};
+		if ((frame.xCoordinate / imageWidth + frame.width / imageWidth) >= 1.0) {
+			NSLog(@"%@: Frame has invalid bounds: %@\nBounds: %f,%f,%fx%f", self.imagePath, frame, frame.xCoordinate, frame.yCoordinate, frame.width, frame.height);
+		}
 
 		if (self.languageCodes) {
 			request.recognitionLanguages = self.languageCodes;
