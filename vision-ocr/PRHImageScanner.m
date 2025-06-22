@@ -77,7 +77,9 @@ extern bool debugMode;
 	return result;
 }
 
-- (NSDictionary <NSString *, NSString *> *_Nonnull) scanFrames:(NSArray <PRHScannableFrame *> *_Nonnull const)frames resultHandler:(void (^_Nonnull const)(NSString *_Nullable name, NSString *_Nullable value))resultHandler {
+- (NSDictionary <NSString *, NSString *> *_Nonnull) scanFrames:(NSArray <PRHScannableFrame *> *_Nonnull const)frames
+	resultHandler:(void (^_Nonnull const)(NSString *_Nullable name, NSString *_Nullable value))resultHandler
+{
 	CGFloat const imageWidth = CGImageGetWidth(_image);
 	CGFloat const imageHeight = CGImageGetHeight(_image);
 
