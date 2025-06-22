@@ -15,6 +15,7 @@
 + (instancetype _Nonnull) scannerWithImage:(CGImageRef _Nonnull const)image properties:(NSDictionary *_Nullable const)imageProps;
 - (instancetype _Nonnull) initWithImage:(CGImageRef _Nonnull const)image properties:(NSDictionary *_Nullable const)imageProps;
 
+@property(copy) NSString *_Nullable imagePath;
 @property(copy) NSArray <NSString *> *_Nullable languageCodes;
 
 - (PRHScannableFrame *_Nonnull const) extent;

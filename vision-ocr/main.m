@@ -185,6 +185,7 @@ int main(int argc, const char * argv[]) {
 			}
 
 			PRHImageScanner *_Nonnull const imageScanner = [PRHImageScanner scannerWithImage:image properties:imageProps];
+			imageScanner.imagePath = imagePath;
 			imageScanner.languageCodes = languageCodes;
 
 			if (transposeOutput) {
